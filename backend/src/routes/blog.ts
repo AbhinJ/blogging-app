@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import { PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
-import { sign, verify } from "hono/jwt";
-import { bodyLimit } from "hono/body-limit";
+import { verify } from "hono/jwt";
+import { createBlog, updateBlog } from "@abhinj/medium-common/dist/blog";
 
 export const blogRouter = new Hono<{
   Bindings: {
@@ -72,8 +72,15 @@ blogRouter.post("/", async (c) => {
   const prisma = new PrismaClient({
     datasourceUrl: c.env.DATABASE_URL,
   }).$extends(withAccelerate());
+  const body = await c.req.json();
+  const { success } = createBlog.safeParse(body);
+  if (!success) {
+    c.status(403);
+    return c.json({
+      message: "Incorrect Inputs",
+    });
+  }
   try {
-    const body = await c.req.json();
     const blog = await prisma.post.create({
       data: {
         title: body.title,
@@ -94,8 +101,15 @@ blogRouter.put("/", async (c) => {
   const prisma = new PrismaClient({
     datasourceUrl: c.env.DATABASE_URL,
   }).$extends(withAccelerate());
+  const body = await c.req.json();
+  const { success } = updateBlog.safeParse(body);
+  if (!success) {
+    c.status(403);
+    return c.json({
+      message: "Incorrect Inputs",
+    });
+  }
   try {
-    const body = await c.req.json();
     const blog = await prisma.post.update({
       where: {
         id: body.id,
